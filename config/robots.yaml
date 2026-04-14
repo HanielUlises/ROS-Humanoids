@@ -1,0 +1,16 @@
+robots:
+  g1:
+    description_package: g1_description
+    urdf: robots/g1/description/g1.urdf.xacro
+    default_controllers: robots/g1/config/controllers.yaml
+    dof: 23
+    sim_supported: true
+    real_hw_supported: true
+
+  h1:
+    description_package: h1_description
+    urdf: robots/h1/description/h1.urdf.xacro
+    default_controllers: robots/h1/config/controllers.yaml
+    dof: 19
+    sim_supported: true
+    real_hw_supported: false
