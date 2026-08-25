@@ -1,88 +1,95 @@
 # ROS-Humanoids
 
-A small, opinionated ROS 2 workspace for humanoid robots. One registry, one
-launcher, one command to put a robot on screen. Right now the resident is the
-[Unitree G1](https://www.unitree.com/g1), a 35 kg biped with 23 or 29 joints
-depending on how much wrist and waist you want.
+A ROS 2 workspace for humanoid robot descriptions and bringup. Robots are
+declared in a single registry, and one launch entry point resolves that registry
+and dispatches to the bringup files of the robot that was asked for. The
+workspace currently holds the Unitree G1 and the Unitree H1, together with a C++
+library that turns the G1 description into joint limits, forward kinematics and
+a centre of mass.
 
-![The Unitree G1 standing in MuJoCo](robots/g1/g1_model/docs/g1_mujoco.png)
+| Unitree G1 | Unitree H1 |
+| --- | --- |
+| ![The Unitree G1 in MuJoCo](docs/g1_mujoco.png) | ![The Unitree H1 in MuJoCo](docs/h1_mujoco.png) |
 
-The idea is boring on purpose: adding a robot should mean dropping a description
-package next to the others, writing a bringup launch file, and adding a few
-lines to `config/robots.yaml`. Everything else, including the top level
-launcher, keeps working without being told about it.
+## Requirements
 
-## Put a robot on screen
+ROS 2 Humble with `gazebo_ros`, `robot_state_publisher`, `joint_state_publisher_gui`
+and `rviz2`. The model library additionally needs `urdfdom` and `orocos_kdl`.
+MuJoCo and Pillow are optional and used only by the renderers in `tools/`.
+
+## Quick start
 
 ```bash
 colcon build
 source install/setup.bash
 
-ros2 launch launch/spawn_robot.launch.py robot:=g1                      # RViz, 23 DOF
-ros2 launch launch/spawn_robot.launch.py robot:=g1 model:=29dof         # RViz, 29 DOF
-ros2 launch launch/spawn_robot.launch.py robot:=g1 sim:=gazebo z:=1.0   # Gazebo Classic
+ros2 launch launch/spawn_robot.launch.py robot:=g1
+ros2 launch launch/spawn_robot.launch.py robot:=g1 model:=29dof
+ros2 launch launch/spawn_robot.launch.py robot:=g1 sim:=gazebo z:=1.0
+ros2 launch launch/spawn_robot.launch.py robot:=h1 sim:=gazebo
 ```
 
-`robot:` and `sim:` are looked up in the registry, so a typo tells you what is
-actually available instead of failing somewhere deep in a launch include.
+`robot:`, `sim:` and `model:` are validated against `config/robots.yaml`, and an
+unrecognised value reports the alternatives that the registry offers.
 
-## What lives where
+## Repository layout
 
-| Path | What it holds |
+| Path | Contents |
 | --- | --- |
-| `config/robots.yaml` | the registry: every robot, its variants, its description and its bringup directory |
-| `launch/spawn_robot.launch.py` | the one entry point, which resolves the registry and hands off to a robot's bringup |
-| `robots/g1/description/` | URDF, MJCF, meshes and RViz config for the G1 |
-| `robots/g1/bringup/` | the RViz and Gazebo launch files the top level dispatches to |
-| `robots/g1/g1_model/` | a C++ library that turns those URDFs into joint limits, forward kinematics and a centre of mass |
+| `config/robots.yaml` | the robot registry: variants, descriptions and bringup directories |
+| `launch/spawn_robot.launch.py` | the entry point that resolves the registry and includes a robot's bringup |
+| `launch/bringup_common.py` | description lookup shared by the bringup files |
+| `robots/<robot>/description/` | URDF, MJCF, meshes and viewer configuration |
+| `robots/<robot>/bringup/` | the RViz and Gazebo launch files for that robot |
+| `robots/g1/g1_model/` | the C++ model library for the G1 |
+| `tools/` | offscreen MuJoCo renderer used for the screenshots |
+| `docs/` | generated images |
 
-## The robots
+## Supported robots
 
-| Robot | Variants | Mass | Description | Sim | Real hardware |
+| Robot | Variants | Actuated joints | Mass | Backends | Real hardware |
 | --- | --- | --- | --- | --- | --- |
-| Unitree G1 | 23 DOF, 29 DOF | 34.1 kg, 35.1 kg | URDF and MJCF | RViz, Gazebo | not wired up yet |
+| Unitree G1 | `23dof`, `29dof` | 23, 29 | 34.1 kg, 35.1 kg | RViz, Gazebo Classic | not wired up |
+| Unitree H1 | `19dof` | 19 | 59.3 kg | RViz, Gazebo Classic | not wired up |
 
-The 23-DOF build has a fixed waist and roll-only wrists. The 29-DOF build adds
-waist roll and pitch plus two extra joints per wrist, which is what the picture
-above is showing off.
+The G1 `23dof` build has a fixed waist and roll-only wrists; the `29dof` build
+adds waist roll and pitch and two further joints per wrist. The H1 carries five
+joints per leg, four per arm and a torso yaw joint.
 
-## The model library
+## Model library
 
-`g1_model` reads the shipped URDFs and answers the questions a controller keeps
-asking: what is the canonical joint order, is this configuration inside the
-limits, where is the left foot, and where is the centre of mass. It has no ROS
-dependency at runtime, so tests and offline tooling can use it directly.
+[`robots/g1/g1_model/`](robots/g1/g1_model/) reads the shipped URDFs and exposes
+a canonical joint order, joint limits with clamping, forward kinematics for any
+link, and the whole-body centre of mass. It has no runtime ROS dependency, so
+offline tooling and tests can link against it directly. Its test suite runs
+against the description files themselves and fails if their shape changes.
 
 ![The G1 squatting, drawn from the model's forward kinematics](robots/g1/g1_model/docs/g1_squat.gif)
 
-That animation is not a recording. It is drawn frame by frame from the model's
-own link poses, with the centre of mass and its ground projection in red, which
-means it cannot drift away from what the URDF says. See
-[`robots/g1/g1_model/`](robots/g1/g1_model/) for the details.
-
-## What you need
-
-ROS 2 Humble, plus `urdfdom` and `orocos_kdl` for the model library and
-`gazebo_ros` for the Gazebo backend. All three ship with a standard desktop
-install. MuJoCo is optional and only used for the screenshot above.
+The animation is drawn frame by frame from the model's link poses, with the
+centre of mass and its ground projection marked in red.
 
 ## Adding a robot
 
-1. Put the description package under `robots/<name>/description/`.
-2. Write `robots/<name>/bringup/<name>_rviz.launch.py`, and any other backend
-   you want, each taking a `model` argument.
-3. Register it in `config/robots.yaml` with its variants and their URDFs.
+1. Place the description package under `robots/<name>/description/`.
+2. Add `robots/<name>/bringup/<name>_rviz.launch.py`, and any further backend,
+   each accepting a `model` argument.
+3. Register the robot in `config/robots.yaml` with its variants and their URDFs.
 
-The launcher does the rest. There is a commented out `h1` entry in the registry
-showing the shape of the thing.
+## Current limitations
 
-## Rough edges, honestly
-
-- No controllers yet. The robot stands there and looks handsome; nothing walks.
-- Gazebo bringup spawns the robot and publishes its state, but there is no
-  `ros2_control` stack behind it.
+- No controllers. The Gazebo bringup spawns a robot and publishes its state,
+  with no `ros2_control` stack behind it.
+- The model library covers the G1 only.
 - The G1 MJCF files cannot be opened by the MuJoCo viewer as shipped: their
-  `meshdir` does not point at `../meshes`, and `scene_*.xml` redefines the floor
-  that the robot file already declares. The description package is upstream
-  material and is deliberately left untouched.
-- H1 is a placeholder in the registry, not a robot.
+  `meshdir` does not resolve to `../meshes`, and `scene_*.xml` redefines assets
+  that the robot file already declares. The renderer in `tools/` works around
+  both while loading. The G1 description is upstream material and is left
+  unmodified.
+
+## Licensing
+
+The robot descriptions come from
+[unitreerobotics/unitree_ros](https://github.com/unitreerobotics/unitree_ros)
+under the BSD 3-Clause licence. See `robots/h1/description/README.md` for the
+changes made to the H1 package while vendoring it.

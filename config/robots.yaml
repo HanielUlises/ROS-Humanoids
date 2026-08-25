@@ -17,14 +17,15 @@ robots:
     sim_supported: true
     real_hw_supported: true
 
-# h1 is not in the repository yet: no description package, no bringup.
-#  h1:
-#    description_package: h1_description
-#    bringup: robots/h1/bringup
-#    default_model: 19dof
-#    urdf:
-#      19dof: robots/h1/description/urdf/h1_19dof.urdf
-#    dof:
-#      19dof: 19
-#    sim_supported: true
-#    real_hw_supported: false
+  h1:
+    description_package: h1_description
+    bringup: robots/h1/bringup
+    default_model: 19dof
+    urdf:
+      19dof: robots/h1/description/urdf/h1.urdf
+    mjcf:
+      19dof: robots/h1/description/mjcf/h1.xml
+    dof:
+      19dof: 19
+    sim_supported: true
+    real_hw_supported: false

@@ -1,7 +1,6 @@
-"""Show the G1 in RViz, with sliders for every joint.
+"""Show the H1 in RViz, with sliders for every joint.
 
-  ros2 launch launch/spawn_robot.launch.py robot:=g1 sim:=rviz
-  ros2 launch launch/spawn_robot.launch.py robot:=g1 sim:=rviz model:=29dof
+  ros2 launch launch/spawn_robot.launch.py robot:=h1 sim:=rviz
 """
 
 import os
@@ -13,7 +12,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 sys.path.insert(0, os.path.dirname(__file__))
-from g1_common import description_directory, robot_description  # noqa: E402
+from h1_common import description_directory, robot_description  # noqa: E402
 
 
 def _nodes(context, *args, **kwargs):
@@ -46,7 +45,7 @@ def _nodes(context, *args, **kwargs):
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument("model", default_value="23dof", description="23dof | 29dof"),
+        DeclareLaunchArgument("model", default_value="19dof", description="19dof"),
         DeclareLaunchArgument("gui", default_value="true", description="joint sliders"),
         OpaqueFunction(function=_nodes),
     ])
