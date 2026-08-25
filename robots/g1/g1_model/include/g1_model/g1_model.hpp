@@ -129,6 +129,21 @@ public:
   /// tree, in depth-first order from the root.
   std::vector<std::pair<std::string, std::string>> treeEdges() const;
 
+  /// Joint torques [Nm] that hold the robot against gravity at @p q, in
+  /// jointNames() order.
+  ///
+  /// The root link is treated as fixed, which is the case a hanging or
+  /// gantry-mounted robot sees. Standing on its feet the legs also carry the
+  /// contact wrench, so the leg torques are an upper bound there rather than
+  /// the exact feedforward term.
+  ///
+  /// @param gravity acceleration in the rootLink() frame, negative along z
+  ///        for an upright robot.
+  /// @throws ModelError if q.size() != dof().
+  JointPositions gravityTorques(
+    const JointPositions & q,
+    const KDL::Vector & gravity = KDL::Vector(0.0, 0.0, -9.80665)) const;
+
 private:
   G1Model() = default;
 

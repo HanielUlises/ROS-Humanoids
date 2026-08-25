@@ -4,6 +4,7 @@ robots:
   g1:
     description_package: g1_description
     bringup: robots/g1/bringup
+    controllers: robots/g1/g1_control/config/g1_controllers.yaml
     default_model: 23dof
     urdf:
       23dof: robots/g1/description/urdf/g1_23dof.urdf

@@ -302,6 +302,78 @@ TEST(Structure, TreeEdgesConnectEveryNonRootLink)
   EXPECT_EQ(children.count(model.rootLink()), 0u) << "the root has no parent";
 }
 
+TEST(Gravity, MatchesTheGradientOfPotentialEnergy)
+{
+  const auto model = load29();
+  const KDL::Vector gravity(0.0, 0.0, -9.80665);
+
+  auto q = model.zeroConfiguration();
+  for (std::size_t i = 0; i < model.dof(); ++i) {
+    q[i] = 0.1 * static_cast<double>(i % 5) - 0.2;
+  }
+  q = model.clamp(q);
+
+  const auto torques = model.gravityTorques(q, gravity);
+  ASSERT_EQ(torques.size(), model.dof());
+
+  // The holding torque is the gradient of potential energy, so compare it with
+  // a central difference of m * g . com, taken through the whole-body CoM.
+  const double step = 1e-6;
+  const double weight = model.totalMass() * gravity.z();
+  for (std::size_t i = 0; i < model.dof(); ++i) {
+    auto forward = q;
+    auto backward = q;
+    forward[i] += step;
+    backward[i] -= step;
+    const double gradient =
+      weight * (model.centerOfMass(forward).z() - model.centerOfMass(backward).z()) / (2 * step);
+    EXPECT_NEAR(torques[i], -gradient, 1e-4) << model.jointNames()[i];
+  }
+}
+
+TEST(Gravity, VerticalAxesCarryNoTorque)
+{
+  const auto model = load29();
+  const auto torques = model.gravityTorques(model.zeroConfiguration());
+
+  // The waist yaw axis is vertical at the zero pose, so gravity has no moment
+  // about it.
+  EXPECT_NEAR(torques[model.indexOf("waist_yaw_joint")], 0.0, 1e-9);
+
+  // The hip yaw axes are tilted by a few degrees, so they carry a little.
+  for (const auto & joint : {"left_hip_yaw_joint", "right_hip_yaw_joint"}) {
+    EXPECT_LT(std::abs(torques[model.indexOf(joint)]), 0.05) << joint;
+  }
+
+  // The shoulder pitch axes are horizontal and hold an outstretched arm.
+  EXPECT_GT(std::abs(torques[model.indexOf("left_shoulder_pitch_joint")]), 0.5);
+}
+
+TEST(Gravity, MirroredJointsCarryMirroredTorques)
+{
+  const auto model = load29();
+  auto q = model.zeroConfiguration();
+  q[model.indexOf("left_knee_joint")] = 0.7;
+  q[model.indexOf("right_knee_joint")] = 0.7;
+
+  const auto torques = model.gravityTorques(q);
+  EXPECT_NEAR(
+    torques[model.indexOf("left_knee_joint")], torques[model.indexOf("right_knee_joint")], 1e-9);
+  EXPECT_NEAR(
+    torques[model.indexOf("left_hip_roll_joint")],
+    -torques[model.indexOf("right_hip_roll_joint")], 1e-9);
+}
+
+TEST(Gravity, WeightlessInZeroGravity)
+{
+  const auto model = load23();
+  const auto torques = model.gravityTorques(model.midRangeConfiguration(), KDL::Vector::Zero());
+  for (std::size_t i = 0; i < model.dof(); ++i) {
+    EXPECT_NEAR(torques[i], 0.0, 1e-12) << model.jointNames()[i];
+  }
+  EXPECT_THROW(model.gravityTorques(JointPositions(2, 0.0)), ModelError);
+}
+
 TEST(Inertia, TotalMassIsPlausible)
 {
   const auto mass_23 = load23().totalMass();

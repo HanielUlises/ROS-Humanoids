@@ -17,7 +17,9 @@ It covers both variants, `g1_23dof.urdf` and `g1_29dof.urdf`, and provides:
 - joint limits for position, velocity and effort, with violation reporting and
   clamping;
 - forward kinematics for any link, absolute or relative to another link;
-- mass and whole-body centre of mass in the pelvis frame.
+- mass and whole-body centre of mass in the pelvis frame;
+- the joint torques that hold the robot against gravity, used as the
+  feedforward term in [`g1_control`](../g1_control).
 
 ![The G1 squatting, drawn from the model's forward kinematics](docs/g1_squat.gif)
 
@@ -30,7 +32,7 @@ the centre of mass and the red dot on the ground marks its projection.
 | --- | --- |
 | `include/g1_model/` | the public header |
 | `src/` | the implementation |
-| `test/` | 25 gtest cases, run against the description URDFs |
+| `test/` | 29 gtest cases, run against the description URDFs |
 | `examples/` | command line tools that report or dump the model state |
 | `tools/` | the renderer that produces the animation above |
 | `docs/` | generated images |

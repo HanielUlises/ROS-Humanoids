@@ -1,0 +1,9 @@
+<library path="g1_control">
+  <class name="g1_control/JointPdController"
+         type="g1_control::JointPdController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      Joint space PD controller with a gravity feedforward term, for the Unitree G1.
+    </description>
+  </class>
+</library>

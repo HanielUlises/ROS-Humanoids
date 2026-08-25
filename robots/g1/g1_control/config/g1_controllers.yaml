@@ -1,0 +1,22 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    joint_pd_controller:
+      type: g1_control/JointPdController
+
+joint_pd_controller:
+  ros__parameters:
+    # Without a `joints` list the controller takes every actuated joint of the
+    # loaded model, in its canonical order.
+
+    # One value applies to every joint. A list sets them per joint, in the same
+    # order as `joints`.
+    kp: [80.0]
+    kd: [4.0]
+
+    # Scales the gravity feedforward term. Zero leaves a plain PD controller.
+    gravity_scale: 1.0

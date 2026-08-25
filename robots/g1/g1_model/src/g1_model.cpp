@@ -257,6 +257,45 @@ KDL::Frame G1Model::relativePose(
   return poses.at(reference_link).Inverse() * poses.at(link);
 }
 
+JointPositions G1Model::gravityTorques(
+  const JointPositions & q, const KDL::Vector & gravity) const
+{
+  const auto poses = linkPoses(q);
+
+  // Generalised gravity force at joint j, summed over the links it carries:
+  //   Q_j = sum_k m_k * gravity . (axis_j x (com_k - origin_j))
+  // The holding torque is its negative.
+  JointPositions torques(dof(), 0.0);
+  for (const auto & entry : urdf_->links_) {
+    const auto & link = entry.second;
+    if (!link || !link->inertial || link->inertial->mass <= 0.0) {
+      continue;
+    }
+    const auto pose = poses.find(link->name);
+    if (pose == poses.end()) {
+      continue;
+    }
+    const KDL::Vector com = (pose->second * toKdl(link->inertial->origin)).p;
+    const KDL::Vector weight = link->inertial->mass * gravity;
+
+    // Walk up to the root, adding this link's weight to every joint above it.
+    for (auto ancestor = link; ancestor->parent_joint; ancestor = ancestor->getParent()) {
+      const auto & joint = *ancestor->parent_joint;
+      const auto index = joint_index_.find(joint.name);
+      if (index == joint_index_.end()) {
+        continue;  // fixed joint
+      }
+      const KDL::Frame & joint_frame = poses.at(joint.child_link_name);
+      const KDL::Vector axis = joint_frame.M * KDL::Vector(joint.axis.x, joint.axis.y, joint.axis.z);
+      const double generalised = joint.type == urdf::Joint::PRISMATIC
+        ? dot(weight, axis)
+        : dot(weight, axis * (com - joint_frame.p));
+      torques[index->second] -= generalised;
+    }
+  }
+  return torques;
+}
+
 KDL::Vector G1Model::centerOfMass(const JointPositions & q) const
 {
   const auto poses = linkPoses(q);

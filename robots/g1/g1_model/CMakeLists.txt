@@ -14,7 +14,7 @@ find_package(urdfdom REQUIRED)
 find_package(urdfdom_headers REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
-add_library(g1_model src/g1_model.cpp)
+add_library(g1_model SHARED src/g1_model.cpp)
 target_include_directories(g1_model PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
